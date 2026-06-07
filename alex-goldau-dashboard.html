@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stoke Systems — A Proposal for Alex Goldau</title>
+<style>
+  :root {
+    --bg: #0a0d0e;
+    --bg-2: #0f1416;
+    --card: #121a1d;
+    --card-2: #162125;
+    --line: #1f2e33;
+    --teal: #2dd4bf;
+    --ocean: #38bdf8;
+    --teal-deep: #0d9488;
+    --text: #e8eff0;
+    --muted: #8aa0a3;
+    --muted-2: #5e7276;
+    --glow: rgba(45, 212, 191, 0.18);
+    --side-w: 256px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(900px 600px at 80% -10%, rgba(56, 189, 248, 0.10), transparent 60%),
+      radial-gradient(700px 500px at 0% 20%, rgba(45, 212, 191, 0.08), transparent 55%),
+      radial-gradient(800px 800px at 50% 120%, rgba(13, 148, 136, 0.10), transparent 60%);
+    z-index: 0; pointer-events: none;
+  }
+
+  /* ---------- shell ---------- */
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    width: var(--side-w); height: 100vh;
+    background: linear-gradient(180deg, #0c1214, #0a0e0f);
+    border-right: 1px solid var(--line);
+    z-index: 20;
+    display: flex; flex-direction: column;
+    padding: 26px 18px 20px;
+  }
+  .brand-block { padding: 0 8px 22px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .brand-mark { display: flex; align-items: center; gap: 10px; }
+  .brand-mark .glyph {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--teal), var(--ocean));
+    display: grid; place-items: center;
+  }
+  .brand-mark .glyph svg { width: 19px; height: 19px; stroke: #04221f; fill: none; stroke-width: 2.2; }
+  .brand-mark .bt { font-weight: 700; font-size: 1.02rem; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 0.74rem; color: var(--muted-2); letter-spacing: .08em; text-transform: uppercase; margin-top: 12px; padding-left: 2px; }
+
+  nav.side-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    background: transparent; border: none; color: var(--muted);
+    padding: 11px 12px; border-radius: 11px; cursor: pointer;
+    font-family: inherit; font-size: 0.93rem; font-weight: 550; text-align: left;
+    width: 100%; transition: all .25s ease; position: relative;
+  }
+  .nav-item svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; flex-shrink: 0; }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,.03); }
+  .nav-item.active { color: #04221f; background: linear-gradient(110deg, var(--teal), var(--ocean)); font-weight: 650; box-shadow: 0 8px 24px -10px var(--teal); }
+  .nav-item .num { margin-left: auto; font-size: 0.72rem; opacity: .55; font-weight: 600; }
+
+  .side-foot {
+    margin-top: 14px; padding: 16px; border-radius: 14px;
+    background: rgba(45,212,191,.06); border: 1px solid rgba(45,212,191,.22);
+  }
+  .side-foot .n { font-size: 1.5rem; font-weight: 800; background: linear-gradient(120deg,var(--teal),var(--ocean)); -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
+  .side-foot .l { font-size: 0.76rem; color: var(--muted); margin-top: 4px; }
+
+  .content { margin-left: var(--side-w); position: relative; z-index: 1; min-height: 100vh; }
+  .view { display: none; padding: 54px 44px 70px; }
+  .view.active { display: block; }
+  .view-inner { max-width: 940px; margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.16,.7,.2,1), transform .7s cubic-bezier(.16,.7,.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ---------- shared headings ---------- */
+  .sec-tag { font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 14px; }
+  .sec-title { font-size: clamp(1.7rem, 3.6vw, 2.5rem); font-weight: 700; letter-spacing: -0.015em; line-height: 1.12; margin-bottom: 16px; }
+  .sec-sub { color: var(--muted); max-width: 640px; font-size: 1.05rem; }
+
+  /* ---------- overview / hero ---------- */
+  .eyebrow { display: inline-flex; align-items: center; gap: 9px; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 22px; }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 12px 2px var(--glow); animation: pulse 2.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.4; transform:scale(.8);} }
+
+  .hero-h1 { font-size: clamp(2.1rem, 5vw, 3.7rem); line-height: 1.05; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 20px; }
+  .hero-h1 .accent { background: linear-gradient(110deg, var(--teal), var(--ocean)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { font-size: clamp(1.05rem, 2.2vw, 1.28rem); color: var(--muted); max-width: 640px; }
+  .sig { font-size: 0.95rem; color: var(--muted-2); margin-top: 26px; border-left: 2px solid var(--teal-deep); padding-left: 16px; max-width: 580px; font-style: italic; }
+
+  .savings-hero { background: linear-gradient(160deg, var(--card-2), var(--card)); border: 1px solid var(--line); border-radius: 24px; padding: 42px 36px; text-align: center; position: relative; overflow: hidden; margin-top: 40px; }
+  .savings-hero::after { content: ""; position: absolute; inset: 0; background: radial-gradient(500px 200px at 50% 0%, var(--glow), transparent 70%); pointer-events: none; }
+  .big-number { font-size: clamp(3.4rem, 11vw, 7rem); font-weight: 800; line-height: 1; letter-spacing: -0.04em; background: linear-gradient(120deg, var(--teal), var(--ocean)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .big-number span { font-size: 0.26em; -webkit-text-fill-color: var(--muted); font-weight: 600; letter-spacing: 0; }
+  .savings-cap { color: var(--muted); font-size: 1.05rem; margin-top: 6px; }
+  .savings-bar-wrap { max-width: 560px; margin: 32px auto 0; text-align: left; }
+  .savings-bar-labels { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted-2); margin-bottom: 8px; }
+  .savings-bar { height: 18px; border-radius: 99px; background: #0a1113; border: 1px solid var(--line); overflow: hidden; }
+  .savings-fill { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--teal-deep), var(--teal), var(--ocean)); transition: width 1.6s cubic-bezier(.16,.7,.2,1); }
+  .savings-meta { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.9rem; color: var(--muted); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; transition: transform .35s ease, border-color .35s ease; }
+  .stat:hover { transform: translateY(-4px); border-color: var(--teal-deep); }
+  .stat .n { font-size: 1.9rem; font-weight: 700; color: var(--teal); }
+  .stat .l { color: var(--muted); font-size: 0.92rem; margin-top: 2px; }
+
+  .divider-quote { text-align: center; font-size: clamp(1.2rem, 2.6vw, 1.7rem); font-weight: 600; letter-spacing: -0.01em; color: var(--text); max-width: 760px; margin: 40px auto 0; line-height: 1.35; }
+  .divider-quote .hl { background: linear-gradient(110deg, var(--teal), var(--ocean)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* ---------- system flow ---------- */
+  .system { background: linear-gradient(165deg, var(--card), var(--bg-2)); border: 1px solid var(--line); border-radius: 22px; padding: 32px 30px; margin-bottom: 22px; transition: border-color .4s ease, box-shadow .4s ease; }
+  .system:hover { border-color: var(--teal-deep); box-shadow: 0 20px 60px -30px var(--glow); }
+  .sys-head { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 24px; flex-wrap: wrap; }
+  .sys-icon { flex-shrink: 0; width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(145deg, var(--teal-deep), #0b3b38); border: 1px solid rgba(45,212,191,.35); }
+  .sys-icon svg { width: 26px; height: 26px; stroke: var(--teal); fill: none; stroke-width: 1.8; }
+  .sys-titles { flex: 1; min-width: 240px; }
+  .sys-num { font-size: 12px; letter-spacing: 0.2em; color: var(--muted-2); text-transform: uppercase; font-weight: 600; }
+  .sys-name { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; }
+  .sys-desc { color: var(--muted); margin-top: 6px; font-size: 0.97rem; }
+  .sys-save { flex-shrink: 0; align-self: flex-start; background: rgba(45,212,191,.08); border: 1px solid rgba(45,212,191,.3); color: var(--teal); border-radius: 99px; padding: 7px 16px; font-weight: 700; font-size: 0.9rem; white-space: nowrap; }
+
+  .flow { display: flex; align-items: stretch; gap: 0; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; }
+  .flow::-webkit-scrollbar { height: 6px; }
+  .flow::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
+  .node { flex: 1 1 0; min-width: 128px; background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 16px 14px; text-align: center; transition: transform .3s ease, border-color .3s ease, background .3s ease; }
+  .node:hover { transform: translateY(-4px); border-color: var(--teal); background: #18272b; }
+  .node .step { font-size: 11px; color: var(--muted-2); letter-spacing: .14em; text-transform: uppercase; }
+  .node .nh { font-weight: 650; font-size: 0.96rem; margin-top: 6px; }
+  .node .nd { color: var(--muted); font-size: 0.81rem; margin-top: 5px; line-height: 1.45; }
+  .node.final { background: linear-gradient(150deg, rgba(45,212,191,.12), rgba(56,189,248,.06)); border-color: rgba(45,212,191,.4); }
+  .node.final .nh { color: var(--teal); }
+  .arrow { flex: 0 0 34px; display: grid; place-items: center; }
+  .arrow svg { width: 22px; height: 22px; stroke: var(--teal); fill: none; stroke-width: 2; opacity: .8; }
+
+  /* ---------- tabs (clients) ---------- */
+  .tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+  .tab-btn { background: var(--card); border: 1px solid var(--line); color: var(--muted); padding: 12px 22px; border-radius: 99px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all .3s ease; font-family: inherit; display: inline-flex; align-items: center; gap: 9px; }
+  .tab-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.9; }
+  .tab-btn:hover { color: var(--text); border-color: var(--teal-deep); }
+  .tab-btn.active { background: linear-gradient(110deg, var(--teal), var(--ocean)); color: #04221f; border-color: transparent; box-shadow: 0 10px 30px -12px var(--teal); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeUp .5s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px);} to { opacity: 1; transform: none; } }
+  .panel-card { background: linear-gradient(165deg, var(--card), var(--bg-2)); border: 1px solid var(--line); border-radius: 22px; padding: 32px 30px; }
+  .panel-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px; align-items: start; }
+  .panel-persona h3 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
+  .panel-persona .who { color: var(--teal); font-size: 0.88rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+  .panel-persona .struggle { color: var(--muted); margin-top: 12px; font-size: 1rem; }
+  .panel-persona .feels { margin-top: 18px; border-left: 2px solid var(--teal-deep); padding-left: 14px; font-style: italic; color: var(--text); font-size: 0.98rem; }
+  .assist-list { display: flex; flex-direction: column; gap: 12px; }
+  .assist-item { display: flex; gap: 14px; align-items: flex-start; background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; transition: border-color .3s ease, transform .3s ease; }
+  .assist-item:hover { border-color: var(--teal); transform: translateX(4px); }
+  .assist-item .ai { flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: rgba(45,212,191,.1); border: 1px solid rgba(45,212,191,.28); }
+  .assist-item .ai svg { width: 19px; height: 19px; stroke: var(--teal); fill: none; stroke-width: 1.8; }
+  .assist-item .at { font-weight: 650; font-size: 0.98rem; }
+  .assist-item .ad { color: var(--muted); font-size: 0.88rem; margin-top: 2px; }
+
+  /* ---------- CRM ---------- */
+  .crm { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
+  .crm-board { background: linear-gradient(165deg, var(--card), var(--bg-2)); border: 1px solid var(--line); border-radius: 20px; padding: 24px; }
+  .crm-board .bh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .crm-board .bh .t { font-weight: 700; font-size: 1.05rem; }
+  .crm-board .bh .d { font-size: 0.82rem; color: var(--muted-2); }
+  .client-card { background: var(--card-2); border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; cursor: pointer; transition: all .3s ease; }
+  .client-card:hover { border-color: var(--teal-deep); transform: translateY(-2px); }
+  .client-card.sel { border-color: var(--teal); background: #16272b; }
+  .client-card.prio-high { border-left-color: #f0814f; }
+  .client-card.prio-med { border-left-color: var(--ocean); }
+  .client-card.prio-low { border-left-color: var(--teal-deep); }
+  .cc-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .cc-name { font-weight: 650; font-size: 1rem; }
+  .cc-channel { font-size: 0.74rem; color: var(--muted-2); letter-spacing: .06em; text-transform: uppercase; }
+  .cc-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+  .tag { font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 99px; border: 1px solid; }
+  .tag.avoid { color: #f0a35f; border-color: rgba(240,163,95,.35); background: rgba(240,163,95,.08); }
+  .tag.bound { color: #7fb2ff; border-color: rgba(127,178,255,.35); background: rgba(127,178,255,.08); }
+  .tag.over { color: var(--teal); border-color: rgba(45,212,191,.35); background: rgba(45,212,191,.08); }
+  .crm-detail { background: linear-gradient(165deg, var(--card-2), #0c1517); border: 1px solid rgba(45,212,191,.25); border-radius: 20px; padding: 24px; align-self: start; }
+  .crm-detail .dh { font-size: 0.8rem; letter-spacing: .14em; text-transform: uppercase; color: var(--teal); font-weight: 600; }
+  .crm-detail .dn { font-size: 1.3rem; font-weight: 700; margin: 4px 0 14px; }
+  .crm-detail .drow { padding: 10px 0; border-top: 1px solid rgba(255,255,255,.06); }
+  .crm-detail .drow .k { font-size: 0.76rem; color: var(--muted-2); text-transform: uppercase; letter-spacing: .08em; }
+  .crm-detail .drow .v { font-size: 0.95rem; color: var(--text); margin-top: 3px; }
+  .crm-detail .nudge { margin-top: 14px; padding: 14px; background: rgba(45,212,191,.08); border: 1px solid rgba(45,212,191,.25); border-radius: 12px; font-size: 0.92rem; color: var(--text); }
+  .crm-detail .nudge .lab { color: var(--teal); font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: .1em; display: block; margin-bottom: 5px; }
+
+  /* ---------- funnel ---------- */
+  .funnel-demo { background: linear-gradient(165deg, var(--card), var(--bg-2)); border: 1px solid var(--line); border-radius: 22px; padding: 36px 34px; max-width: 720px; margin: 0 auto; }
+  .funnel-progress { display: flex; gap: 8px; margin-bottom: 26px; }
+  .fp-seg { flex: 1; height: 5px; border-radius: 99px; background: var(--line); transition: background .4s ease; }
+  .fp-seg.done { background: linear-gradient(90deg, var(--teal), var(--ocean)); }
+  .fq-step { display: none; }
+  .fq-step.active { display: block; animation: fadeUp .45s ease; }
+  .fq-num { font-size: 0.8rem; letter-spacing: .16em; text-transform: uppercase; color: var(--teal); font-weight: 600; }
+  .fq-q { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 8px 0 22px; line-height: 1.25; }
+  .fq-opts { display: flex; flex-direction: column; gap: 12px; }
+  .fq-opt { text-align: left; background: var(--card-2); border: 1px solid var(--line); color: var(--text); padding: 16px 18px; border-radius: 13px; font-size: 1rem; cursor: pointer; font-family: inherit; transition: all .25s ease; display: flex; align-items: center; gap: 13px; }
+  .fq-opt:hover { border-color: var(--teal); transform: translateX(4px); background: #16272b; }
+  .fq-opt .pip { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--muted-2); flex-shrink: 0; transition: all .25s ease; }
+  .fq-opt:hover .pip { border-color: var(--teal); box-shadow: inset 0 0 0 4px var(--teal); }
+  .report { display: none; text-align: center; animation: fadeUp .6s ease; }
+  .report.show { display: block; }
+  .report .badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(45,212,191,.1); border: 1px solid rgba(45,212,191,.3); color: var(--teal); padding: 7px 16px; border-radius: 99px; font-size: 0.82rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 18px; }
+  .report h3 { font-size: 1.7rem; font-weight: 700; margin-bottom: 6px; }
+  .gauge { width: 150px; height: 150px; margin: 18px auto 8px; position: relative; }
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge .gnum { position: absolute; inset: 0; display: grid; place-items: center; }
+  .gauge .gnum b { font-size: 2.4rem; font-weight: 800; background: linear-gradient(120deg,var(--teal),var(--ocean)); -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
+  .gauge .gnum small { font-size: 0.72rem; color: var(--muted-2); text-transform: uppercase; letter-spacing: .12em; }
+  .report .verdict { color: var(--text); font-size: 1.05rem; max-width: 480px; margin: 8px auto 20px; }
+  .report .rsummary { background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; text-align: left; max-width: 480px; margin: 0 auto 22px; }
+  .report .rsummary .rrow { display: flex; justify-content: space-between; padding: 7px 0; font-size: 0.92rem; border-top: 1px solid rgba(255,255,255,.05); gap: 14px; }
+  .report .rsummary .rrow:first-child { border-top: none; }
+  .report .rsummary .rrow span:first-child { color: var(--muted); }
+  .report .rsummary .rrow span:last-child { color: var(--teal); font-weight: 600; text-align: right; }
+  .ghost-btn { background: transparent; border: 1px solid var(--line); color: var(--muted); padding: 11px 24px; border-radius: 99px; cursor: pointer; font-family: inherit; font-size: 0.92rem; font-weight: 600; transition: all .3s ease; }
+  .ghost-btn:hover { color: var(--text); border-color: var(--teal-deep); }
+
+  /* ---------- calculator ---------- */
+  .calc { background: linear-gradient(165deg, var(--card-2), #0b1416); border: 1px solid rgba(45,212,191,.25); border-radius: 24px; padding: 38px 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: center; }
+  .calc-controls .ctrl { margin-bottom: 26px; }
+  .calc-controls label { display: flex; justify-content: space-between; font-size: 0.92rem; color: var(--muted); margin-bottom: 12px; }
+  .calc-controls label b { color: var(--teal); font-size: 1rem; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 99px; background: #0a1113; border: 1px solid var(--line); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, var(--teal), var(--ocean)); cursor: pointer; box-shadow: 0 0 0 4px rgba(45,212,191,.15), 0 4px 12px rgba(0,0,0,.4); }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border: none; border-radius: 50%; background: linear-gradient(135deg, var(--teal), var(--ocean)); cursor: pointer; box-shadow: 0 0 0 4px rgba(45,212,191,.15); }
+  .offer-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+  .offer-pick button { flex: 1 1 auto; min-width: 120px; background: var(--card); border: 1px solid var(--line); color: var(--muted); padding: 11px 12px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 0.86rem; font-weight: 600; transition: all .25s ease; text-align: center; }
+  .offer-pick button .price { display: block; font-size: 0.76rem; color: var(--muted-2); margin-top: 2px; }
+  .offer-pick button:hover { border-color: var(--teal-deep); color: var(--text); }
+  .offer-pick button.on { border-color: var(--teal); background: rgba(45,212,191,.08); color: var(--text); }
+  .offer-pick button.on .price { color: var(--teal); }
+  .calc-out { text-align: center; }
+  .calc-out .label { font-size: 0.82rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-2); }
+  .calc-out .money { font-size: clamp(2.6rem, 8vw, 4rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; background: linear-gradient(120deg, var(--teal), var(--ocean)); -webkit-background-clip: text; background-clip: text; color: transparent; margin: 6px 0; }
+  .calc-out .money-sub { color: var(--muted); font-size: 0.95rem; }
+  .calc-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+  .calc-mini .m { background: rgba(255,255,255,.02); border: 1px solid var(--line); border-radius: 13px; padding: 14px; }
+  .calc-mini .m .mn { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+  .calc-mini .m .ml { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .calc-note { font-size: 0.78rem; color: var(--muted-2); margin-top: 18px; font-style: italic; }
+
+  /* ---------- before / after ---------- */
+  .ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .ba-card { border-radius: 20px; padding: 30px 28px; border: 1px solid var(--line); }
+  .ba-before { background: linear-gradient(165deg, #16110f, #0e0c0b); border-color: #2a1c18; }
+  .ba-after { background: linear-gradient(165deg, var(--card-2), #0c1517); border-color: rgba(45,212,191,.28); }
+  .ba-label { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+  .ba-before .ba-label { color: #d98b6a; }
+  .ba-after .ba-label { color: var(--teal); }
+  .ba-card h3 { font-size: 1.3rem; margin-bottom: 18px; font-weight: 700; }
+  .ba-list { list-style: none; }
+  .ba-list li { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.97rem; color: var(--muted); }
+  .ba-list li:first-child { border-top: none; }
+  .ba-list .mk { flex-shrink: 0; width: 18px; height: 18px; margin-top: 3px; }
+  .ba-before .mk { color: #c4684a; }
+  .ba-after .mk { color: var(--teal); }
+  .ba-after .ba-list li { color: var(--text); }
+
+  .view-foot { text-align: center; color: var(--muted-2); font-size: 0.85rem; margin-top: 40px; padding-top: 26px; border-top: 1px solid var(--line); }
+  .view-foot .brand { color: var(--teal); font-weight: 600; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 900px) {
+    .sidebar {
+      position: sticky; top: 0; left: 0; width: 100%; height: auto;
+      flex-direction: row; align-items: center; gap: 12px;
+      padding: 12px 14px; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--line);
+    }
+    .brand-block { border: none; margin: 0; padding: 0; flex-shrink: 0; }
+    .brand-sub { display: none; }
+    nav.side-nav { flex-direction: row; gap: 8px; overflow: visible; flex: none; }
+    .nav-item { white-space: nowrap; padding: 9px 14px; }
+    .nav-item .num { display: none; }
+    .nav-item span.txt { font-size: 0.88rem; }
+    .side-foot { display: none; }
+    .content { margin-left: 0; }
+    .view { padding: 32px 18px 60px; }
+  }
+  @media (max-width: 760px) {
+    .flow { flex-direction: column; align-items: stretch; }
+    .arrow { flex: 0 0 30px; transform: rotate(90deg); height: 30px; }
+    .node { min-width: 0; }
+    .stat-row { grid-template-columns: 1fr; }
+    .panel-grid { grid-template-columns: 1fr; gap: 22px; }
+    .crm { grid-template-columns: 1fr; }
+    .calc { grid-template-columns: 1fr; gap: 28px; }
+    .ba-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="sidebar">
+  <div class="brand-block">
+    <div class="brand-mark">
+      <div class="glyph"><svg viewBox="0 0 24 24"><path d="M3 16c3 0 3-3 6-3s3 3 6 3 3-3 6-3M3 11c3 0 3-3 6-3s3 3 6 3 3-3 6-3"/></svg></div>
+      <div><div class="bt">Stoke Systems</div></div>
+    </div>
+    <div class="brand-sub">Built for Alex Goldau</div>
+  </div>
+
+  <nav class="side-nav" id="side-nav">
+    <button class="nav-item active" data-view="overview"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg><span class="txt">Overview</span></button>
+    <button class="nav-item" data-view="systems"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 9 15M20 4v6M20 4h-6"/></svg><span class="txt">The Systems</span><span class="num">3</span></button>
+    <button class="nav-item" data-view="clients"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="txt">Who It Serves</span></button>
+    <button class="nav-item" data-view="crm"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="txt">Smart CRM</span></button>
+    <button class="nav-item" data-view="funnel"><svg viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg><span class="txt">Funnel Demo</span></button>
+    <button class="nav-item" data-view="roi"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="txt">ROI Calculator</span></button>
+    <button class="nav-item" data-view="shift"><svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg><span class="txt">The Shift</span></button>
+  </nav>
+
+  <div class="side-foot">
+    <div class="n">16.5 hrs</div>
+    <div class="l">reclaimed every week</div>
+  </div>
+</aside>
+
+<!-- ============ CONTENT ============ -->
+<main class="content">
+
+  <!-- OVERVIEW -->
+  <section class="view active" id="view-overview">
+    <div class="view-inner">
+      <div class="eyebrow reveal"><span class="dot"></span> A Private Proposal</div>
+      <h1 class="hero-h1 reveal">Slow down to speed up.<br><span class="accent">Let the machines do the paddling.</span></h1>
+      <p class="lede reveal">Three quiet systems that take 16.5 hours of admin off your plate every week — so the work that actually lights you up gets the room it deserves.</p>
+      <p class="sig reveal">Alex — you teach people to only do what they love. This is what that looks like behind the scenes: the busywork handled in the background, your energy pointed at coaching, writing Stoke, and being present. Same you. More spaciousness.</p>
+
+      <div class="savings-hero reveal">
+        <div class="big-number" data-count="16.5">0<span> hrs / week</span></div>
+        <div class="savings-cap">reclaimed from ~20 hrs of weekly admin</div>
+        <div class="savings-bar-wrap">
+          <div class="savings-bar-labels"><span>Admin handled by the systems</span><span><strong style="color:var(--teal)">82%</strong></span></div>
+          <div class="savings-bar"><div class="savings-fill" data-fill="82"></div></div>
+          <div class="savings-meta"><span>16.5 hrs automated</span><span>3.5 hrs left for the human touch</span></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat reveal"><div class="n">5 hrs</div><div class="l">Content created from calls you were already on</div></div>
+        <div class="stat reveal"><div class="n">6 hrs</div><div class="l">Client signals sorted into one daily read</div></div>
+        <div class="stat reveal"><div class="n">3.5 hrs</div><div class="l">Lead qualifying that runs while you sleep</div></div>
+      </div>
+
+      <p class="divider-quote reveal">Three systems. One principle: <span class="hl">the busywork happens in the background, the magic stays in your hands.</span></p>
+    </div>
+  </section>
+
+  <!-- SYSTEMS -->
+  <section class="view" id="view-systems">
+    <div class="view-inner">
+      <div class="sec-tag reveal">How It Works</div>
+      <h2 class="sec-title reveal">The Three Systems</h2>
+      <p class="sec-sub reveal" style="margin-bottom:34px;">Each one runs quietly off things you already do — your calls, your voice notes, your workbook. No new habits to build.</p>
+
+      <div class="system reveal">
+        <div class="sys-head">
+          <div class="sys-icon"><svg viewBox="0 0 24 24"><path d="M3 5h18v12H3z"/><path d="M8 21h8M12 17v4"/><path d="M7 9l3 2-3 2"/><path d="M13 13h4"/></svg></div>
+          <div class="sys-titles"><div class="sys-num">System 01</div><div class="sys-name">Ambient Content Harvesting Engine</div><div class="sys-desc">Every Zoom call becomes raw material. Your best thinking — already spoken — turned into blog posts, newsletter segments, and Stoke book drafts, in your voice.</div></div>
+          <div class="sys-save">Saves 5 hrs/wk</div>
+        </div>
+        <div class="flow">
+          <div class="node"><div class="step">Step 1</div><div class="nh">Call happens</div><div class="nd">Zoom session auto-records in the background</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node"><div class="step">Step 2</div><div class="nh">Auto-transcribed</div><div class="nd">Clean transcript, no manual note-taking</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node"><div class="step">Step 3</div><div class="nh">Shaped to your voice</div><div class="nd">AI trained on how you actually talk &amp; write</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node"><div class="step">Step 4</div><div class="nh">Drafts land</div><div class="nd">Blog · newsletter · book chapters queued</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node final"><div class="step">Output</div><div class="nh">You edit, not create</div><div class="nd">Approve &amp; ship — 5 hrs back</div></div>
+        </div>
+      </div>
+
+      <div class="system reveal">
+        <div class="sys-head">
+          <div class="sys-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg></div>
+          <div class="sys-titles"><div class="sys-num">System 02</div><div class="sys-name">Asynchronous Client Triage System</div><div class="sys-desc">Voxer and Slack go from a scattered firehose to one calm daily digest — surfacing the patterns underneath: avoidance, boundaries, overgiving.</div></div>
+          <div class="sys-save">Saves 6 hrs/wk</div>
+        </div>
+        <div class="flow">
+          <div class="node"><div class="step">Step 1</div><div class="nh">Messages arrive</div><div class="nd">Voxer voice notes &amp; Slack threads</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node"><div class="step">Step 2</div><div class="nh">Auto-transcribed</div><div class="nd">Voice → text, all in one place</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node"><div class="step">Step 3</div><div class="nh">Patterns spotted</div><div class="nd">Avoidance · boundaries · overgiving flagged</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node"><div class="step">Step 4</div><div class="nh">One daily digest</div><div class="nd">Who needs you, and why — at a glance</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node final"><div class="step">Output</div><div class="nh">Coach, don't sort</div><div class="nd">Show up sharp — 6 hrs back</div></div>
+        </div>
+      </div>
+
+      <div class="system reveal">
+        <div class="sys-head">
+          <div class="sys-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div class="sys-titles"><div class="sys-num">System 03</div><div class="sys-name">Interactive Diagnostic Funnel</div><div class="sys-desc">Your "Non-Negotiables" workbook becomes a living qualifier. Prospects self-select, get a personalised Stoke Alignment Report, and the aligned ones land on your calendar.</div></div>
+          <div class="sys-save">Saves 3.5 hrs/wk</div>
+        </div>
+        <div class="flow">
+          <div class="node"><div class="step">Step 1</div><div class="nh">Prospect engages</div><div class="nd">Works through your Non-Negotiables online</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node"><div class="step">Step 2</div><div class="nh">AI reads alignment</div><div class="nd">Fit, readiness &amp; intent scored</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node"><div class="step">Step 3</div><div class="nh">Report generated</div><div class="nd">Personalised Stoke Alignment Report (PDF)</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node"><div class="step">Step 4</div><div class="nh">High-intent routed</div><div class="nd">Aligned leads auto-booked to your calendar</div></div>
+          <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="node final"><div class="step">Output</div><div class="nh">Right-fit calls only</div><div class="nd">No tire-kickers — 3.5 hrs back</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLIENTS -->
+  <section class="view" id="view-clients">
+    <div class="view-inner">
+      <div class="sec-tag reveal">Who It Serves</div>
+      <h2 class="sec-title reveal">The same systems, tuned to each kind of client you take on.</h2>
+      <p class="sec-sub reveal" style="margin-bottom:28px;">You don't coach one type of person — so the systems flex to fit each one. Tap through to see who's in your world and how the machines hold them.</p>
+
+      <div class="reveal">
+        <div class="tabs" id="who-tabs">
+          <button class="tab-btn active" data-who="founders"><svg viewBox="0 0 24 24"><path d="M2 20h20M5 20V8l7-5 7 5v12M9 20v-5h6v5"/></svg> Startup Founders</button>
+          <button class="tab-btn" data-who="execs"><svg viewBox="0 0 24 24"><path d="M20 7h-3V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM9 7V5h6v2"/></svg> Executives</button>
+          <button class="tab-btn" data-who="creatives"><svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586M11 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg> Creative Entrepreneurs</button>
+        </div>
+
+        <div class="tab-panel active" data-panel="founders">
+          <div class="panel-card"><div class="panel-grid">
+            <div class="panel-persona"><div class="who">The Builder in the Storm</div><h3>Startup Founders</h3><p class="struggle">Moving fast, deciding constantly, running on fumes. They came to you because the speed stopped being fun — and they can't tell the signal from the noise anymore.</p><p class="feels">"I'm doing everything, and I still feel behind."</p></div>
+            <div class="assist-list">
+              <div class="assist-item"><div class="ai"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div><div class="at">Triage catches the spiral early</div><div class="ad">Avoidance &amp; overgiving patterns flagged before the burnout call happens.</div></div></div>
+              <div class="assist-item"><div class="ai"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div><div class="at">Funnel filters for readiness</div><div class="ad">Only founders who can actually slow down reach your calendar.</div></div></div>
+              <div class="assist-item"><div class="ai"><svg viewBox="0 0 24 24"><path d="M3 5h18v12H3zM8 21h8"/></svg></div><div><div class="at">Their breakthroughs become teaching</div><div class="ad">The harvesting engine turns their wins into Stoke content for the next founder.</div></div></div>
+            </div>
+          </div></div>
+        </div>
+
+        <div class="tab-panel" data-panel="execs">
+          <div class="panel-card"><div class="panel-grid">
+            <div class="panel-persona"><div class="who">The High Performer Who Forgot Why</div><h3>Executives</h3><p class="struggle">Successful on paper, hollow underneath. Disciplined, guarded, allergic to fluff. They need precision and proof, not a pep talk.</p><p class="feels">"I built the thing. Now I don't recognise my life."</p></div>
+            <div class="assist-list">
+              <div class="assist-item"><div class="ai"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div><div class="at">Boundaries get named, not buried</div><div class="ad">Triage surfaces where they're overgiving at work and abandoning themselves.</div></div></div>
+              <div class="assist-item"><div class="ai"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div><div class="at">Diagnostic speaks their language</div><div class="ad">The Stoke Alignment Report gives them the data-backed clarity they respect.</div></div></div>
+              <div class="assist-item"><div class="ai"><svg viewBox="0 0 24 24"><path d="M3 5h18v12H3zM8 21h8"/></svg></div><div><div class="at">No detail dropped between sessions</div><div class="ad">Daily digest means you walk in already knowing exactly where they are.</div></div></div>
+            </div>
+          </div></div>
+        </div>
+
+        <div class="tab-panel" data-panel="creatives">
+          <div class="panel-card"><div class="panel-grid">
+            <div class="panel-persona"><div class="who">The Maker Drowning in the Business</div><h3>Creative Entrepreneurs</h3><p class="struggle">Brilliant at the craft, buried by the admin. The thing they loved became a job. They want the spark back without burning the whole thing down.</p><p class="feels">"I started this to be free. Now it owns me."</p></div>
+            <div class="assist-list">
+              <div class="assist-item"><div class="ai"><svg viewBox="0 0 24 24"><path d="M3 5h18v12H3zM8 21h8"/></svg></div><div><div class="at">They see freedom is possible</div><div class="ad">You model it — your own admin runs itself, and they feel that spaciousness.</div></div></div>
+              <div class="assist-item"><div class="ai"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div><div class="at">Avoidance gets gently caught</div><div class="ad">Triage notices when they ghost the hard work and prompts a nudge.</div></div></div>
+              <div class="assist-item"><div class="ai"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div><div class="at">Right-fit creatives find you</div><div class="ad">The funnel attracts the ones ready to do the work, not just admire it.</div></div></div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CRM -->
+  <section class="view" id="view-crm">
+    <div class="view-inner">
+      <div class="sec-tag reveal">System 02, Up Close</div>
+      <h2 class="sec-title reveal">Your morning digest, in one calm screen.</h2>
+      <p class="sec-sub reveal" style="margin-bottom:28px;">This is what the Triage System hands you each morning. Every Voxer and Slack message already read, sorted, and pattern-tagged. Tap a client to see what surfaced.</p>
+
+      <div class="crm reveal">
+        <div class="crm-board">
+          <div class="bh"><div><div class="t">Daily Digest</div></div><div class="d">Today · 4 clients need attention</div></div>
+          <div class="client-card prio-high sel" data-client="maya"><div class="cc-top"><span class="cc-name">Maya R.</span><span class="cc-channel">Voxer · 3 notes</span></div><div class="cc-tags"><span class="tag avoid">avoidance</span><span class="tag over">overgiving</span></div></div>
+          <div class="client-card prio-med" data-client="james"><div class="cc-top"><span class="cc-name">James T.</span><span class="cc-channel">Slack · 5 msgs</span></div><div class="cc-tags"><span class="tag bound">boundaries</span></div></div>
+          <div class="client-card prio-high" data-client="dana"><div class="cc-top"><span class="cc-name">Dana K.</span><span class="cc-channel">Voxer · 2 notes</span></div><div class="cc-tags"><span class="tag over">overgiving</span><span class="tag bound">boundaries</span></div></div>
+          <div class="client-card prio-low" data-client="leo"><div class="cc-top"><span class="cc-name">Leo M.</span><span class="cc-channel">Slack · 1 msg</span></div><div class="cc-tags"><span class="tag avoid">avoidance</span></div></div>
+        </div>
+        <div class="crm-detail" id="crm-detail"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FUNNEL -->
+  <section class="view" id="view-funnel">
+    <div class="view-inner">
+      <div class="sec-tag reveal">System 03, Try It Yourself</div>
+      <h2 class="sec-title reveal">Walk the funnel a prospect would walk.</h2>
+      <p class="sec-sub reveal" style="margin-bottom:28px;">This is a live taste of your Non-Negotiables workbook as an AI qualifier. Answer a few and watch a Stoke Alignment Report build itself.</p>
+
+      <div class="funnel-demo reveal">
+        <div class="funnel-progress"><div class="fp-seg done"></div><div class="fp-seg"></div><div class="fp-seg"></div></div>
+
+        <div class="fq-step active" data-step="0">
+          <div class="fq-num">Question 1 of 3</div>
+          <div class="fq-q">When your work feels heavy, what do you usually do?</div>
+          <div class="fq-opts">
+            <button class="fq-opt" data-score="3"><span class="pip"></span> Push harder and power through it</button>
+            <button class="fq-opt" data-score="7"><span class="pip"></span> Notice it, but don't know how to change it</button>
+            <button class="fq-opt" data-score="10"><span class="pip"></span> Stop and ask what it's trying to tell me</button>
+          </div>
+        </div>
+        <div class="fq-step" data-step="1">
+          <div class="fq-num">Question 2 of 3</div>
+          <div class="fq-q">How ready are you to actually protect your non-negotiables?</div>
+          <div class="fq-opts">
+            <button class="fq-opt" data-score="4"><span class="pip"></span> I know what they are, I just don't honour them</button>
+            <button class="fq-opt" data-score="8"><span class="pip"></span> I'm starting to, and I want backup</button>
+            <button class="fq-opt" data-score="10"><span class="pip"></span> All in — I'm done living against them</button>
+          </div>
+        </div>
+        <div class="fq-step" data-step="2">
+          <div class="fq-num">Question 3 of 3</div>
+          <div class="fq-q">What would "only doing what you love" actually free up?</div>
+          <div class="fq-opts">
+            <button class="fq-opt" data-score="6"><span class="pip"></span> Time — I'm drowning in the wrong tasks</button>
+            <button class="fq-opt" data-score="9"><span class="pip"></span> Energy — I want to feel alive in my work again</button>
+            <button class="fq-opt" data-score="10"><span class="pip"></span> All of it — time, energy, and who I get to be</button>
+          </div>
+        </div>
+
+        <div class="report" id="report">
+          <div class="badge">Stoke Alignment Report · Generated</div>
+          <div class="gauge">
+            <svg width="150" height="150" viewBox="0 0 150 150">
+              <circle cx="75" cy="75" r="64" fill="none" stroke="#1f2e33" stroke-width="11"/>
+              <circle id="gauge-arc" cx="75" cy="75" r="64" fill="none" stroke="url(#gg)" stroke-width="11" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/>
+              <defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2dd4bf"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs>
+            </svg>
+            <div class="gnum"><b id="score-num">0</b><small>Alignment</small></div>
+          </div>
+          <h3 id="report-title">Reading your alignment…</h3>
+          <p class="verdict" id="report-verdict"></p>
+          <div class="rsummary">
+            <div class="rrow"><span>Readiness to slow down</span><span id="r-1">—</span></div>
+            <div class="rrow"><span>Boundary strength</span><span id="r-2">—</span></div>
+            <div class="rrow"><span>Recommended path</span><span id="r-3">—</span></div>
+            <div class="rrow"><span>Next action</span><span id="r-4">—</span></div>
+          </div>
+          <button class="ghost-btn" id="funnel-reset">↺ Run it again</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROI -->
+  <section class="view" id="view-roi">
+    <div class="view-inner">
+      <div class="sec-tag reveal">What It's Worth</div>
+      <h2 class="sec-title reveal">Reclaimed hours, turned into real capacity.</h2>
+      <p class="sec-sub reveal" style="margin-bottom:28px;">Time off your plate is nice. Time you can pour back into clients is the point. Drag the sliders and pick where you'd reinvest the hours.</p>
+
+      <div class="calc reveal">
+        <div class="calc-controls">
+          <div class="ctrl"><label>Hours reclaimed per week <b><span id="hrs-val">16.5</span> hrs</b></label><input type="range" id="hrs" min="4" max="20" step="0.5" value="16.5"></div>
+          <div class="ctrl"><label>Share of those hours reinvested into clients <b><span id="reinvest-val">40</span>%</b></label><input type="range" id="reinvest" min="10" max="100" step="5" value="40"></div>
+          <div class="ctrl">
+            <label style="margin-bottom:12px;">Where you'd point that capacity</label>
+            <div class="offer-pick" id="offers">
+              <button data-rev="6000" data-hrs="1" data-name="The Dojo">The Dojo<span class="price">$500/mo</span></button>
+              <button data-rev="2000" data-hrs="1.5" data-name="Connection Collective">Connection Collective<span class="price">$2k</span></button>
+              <button class="on" data-rev="10000" data-hrs="2.5" data-name="Deep Coaching">1-Yr Deep Coaching<span class="price">$10k</span></button>
+              <button data-rev="20000" data-hrs="4" data-name="Private Coaching">Private Coaching<span class="price">up to $20k</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="calc-out">
+          <div class="label">Added revenue potential / year</div>
+          <div class="money" id="calc-money">$0</div>
+          <div class="money-sub" id="calc-sub">from reinvested hours into <span>Deep Coaching</span></div>
+          <div class="calc-mini">
+            <div class="m"><div class="mn" id="m-hours">858</div><div class="ml">hours reclaimed / year</div></div>
+            <div class="m"><div class="mn" id="m-weeks">21</div><div class="ml">full work-weeks back</div></div>
+            <div class="m"><div class="mn" id="m-clients">0</div><div class="ml">added client capacity</div></div>
+            <div class="m"><div class="mn" id="m-month">$0</div><div class="ml">added / month</div></div>
+          </div>
+          <p class="calc-note">Illustrative — based on your offers and a ~35-week coaching year. The real win is the spaciousness; the revenue is the bonus.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHIFT -->
+  <section class="view" id="view-shift">
+    <div class="view-inner">
+      <div class="sec-tag reveal">The Shift</div>
+      <h2 class="sec-title reveal">Your week, before and after.</h2>
+      <p class="sec-sub reveal" style="margin-bottom:30px;">Same calendar. Same clients. Completely different feeling.</p>
+
+      <div class="ba-grid">
+        <div class="ba-card ba-before reveal">
+          <div class="ba-label">The current tide</div>
+          <h3>Pulled in every direction</h3>
+          <ul class="ba-list">
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>Re-watching calls to mine them for content</li>
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>Voxer &amp; Slack scattered across the day, easy to drop</li>
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>Discovery calls with people who were never a fit</li>
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>The book idea waiting for a free weekend that never comes</li>
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>~20 hrs of admin quietly draining the stoke</li>
+          </ul>
+        </div>
+        <div class="ba-card ba-after reveal">
+          <div class="ba-label">The new flow</div>
+          <h3>Spacious and pointed</h3>
+          <ul class="ba-list">
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Content drafts waiting for you, already in your voice</li>
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>One morning digest tells you exactly who needs you today</li>
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Calendar holds only aligned, high-intent calls</li>
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Stoke writes itself in the background from your real conversations</li>
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>16.5 hrs back for coaching, surfing, presence</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="view-foot">A strategic AI automation proposal · prepared privately for <span class="brand">Alex Goldau</span><br>Stoke: only do what you love. The rest runs itself.</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // ---------- view switching ----------
+  function revealIn(view) {
+    view.querySelectorAll('.reveal').forEach((el, i) => {
+      el.classList.remove('in');
+      void el.offsetWidth;
+      el.style.transitionDelay = (Math.min(i, 6) * 0.06) + 's';
+      el.classList.add('in');
+    });
+  }
+  function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + id));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === id));
+    const v = document.getElementById('view-' + id);
+    revealIn(v);
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (id === 'overview') playSavings();
+  }
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => showView(btn.dataset.view));
+  });
+
+  // ---------- savings animation ----------
+  function playSavings() {
+    const el = document.querySelector('.big-number');
+    if (!el) return;
+    const target = parseFloat(el.getAttribute('data-count'));
+    const span = el.querySelector('span').outerHTML;
+    const dur = 1400, start = performance.now();
+    (function tick(now) {
+      const p = Math.min((now - start) / dur, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.innerHTML = (target * eased).toFixed(1) + span;
+      if (p < 1) requestAnimationFrame(tick); else el.innerHTML = target + span;
+    })(performance.now());
+    const fill = document.querySelector('.savings-fill');
+    fill.style.width = 0;
+    setTimeout(() => { fill.style.width = fill.getAttribute('data-fill') + '%'; }, 250);
+  }
+
+  // ---------- client tabs ----------
+  document.querySelectorAll('#who-tabs .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const who = btn.dataset.who;
+      document.querySelectorAll('#who-tabs .tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('[data-panel]').forEach(p => p.classList.toggle('active', p.dataset.panel === who));
+    });
+  });
+
+  // ---------- smart CRM ----------
+  const crmData = {
+    maya: { name: 'Maya R.', prio: 'High priority', summary: '3 Voxer notes since yesterday, each longer and more apologetic than the last.', signal: 'Avoidance + overgiving. Talking around the launch, over-explaining why she helped everyone else first.', shift: 'Tone dropped mid-second-note — that\'s where the real thing is.', nudge: 'Open with the launch she keeps not mentioning. Name the overgiving gently before she defends it.' },
+    james: { name: 'James T.', prio: 'Medium priority', summary: '5 Slack messages, all late at night, all about other people\'s deadlines.', signal: 'Boundaries. Saying yes to his team while his own non-negotiables quietly slid.', shift: 'Hasn\'t mentioned his morning routine in 9 days — used to lead every check-in with it.', nudge: 'Ask what he\'s protected for himself this week. Watch the pause.' },
+    dana: { name: 'Dana K.', prio: 'High priority', summary: '2 Voxer notes — short, clipped, unlike her usual flow.', signal: 'Overgiving + boundaries. Pouring into a client who keeps taking; resentment leaking through.', shift: 'Used the phrase "it\'s fine" four times. It\'s not fine.', nudge: 'Go straight to the resentment. She\'s ready to draw a line, just needs permission.' },
+    leo: { name: 'Leo M.', prio: 'Low priority', summary: '1 Slack message — upbeat, but oddly vague about progress.', signal: 'Mild avoidance. Lots of motion described, no actual movement on the hard thing.', shift: 'Celebrating busywork again. A familiar pattern from month one.', nudge: 'Light touch. One question about the thing he keeps sidestepping.' }
+  };
+  const detailEl = document.getElementById('crm-detail');
+  function renderClient(key) {
+    const d = crmData[key];
+    detailEl.innerHTML =
+      '<div class="dh">' + d.prio + '</div>' +
+      '<div class="dn">' + d.name + '</div>' +
+      '<div class="drow"><div class="k">What came in</div><div class="v">' + d.summary + '</div></div>' +
+      '<div class="drow"><div class="k">Pattern detected</div><div class="v">' + d.signal + '</div></div>' +
+      '<div class="drow"><div class="k">The tell</div><div class="v">' + d.shift + '</div></div>' +
+      '<div class="nudge"><span class="lab">Suggested opening</span>' + d.nudge + '</div>';
+  }
+  document.querySelectorAll('.client-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.client-card').forEach(c => c.classList.toggle('sel', c === card));
+      renderClient(card.dataset.client);
+    });
+  });
+  renderClient('maya');
+
+  // ---------- funnel ----------
+  const steps = document.querySelectorAll('.fq-step');
+  const segs = document.querySelectorAll('.fp-seg');
+  const reportEl = document.getElementById('report');
+  let fIdx = 0, fScore = 0;
+  function showStep(i) {
+    steps.forEach((s, n) => s.classList.toggle('active', n === i));
+    segs.forEach((s, n) => s.classList.toggle('done', n <= i));
+  }
+  document.querySelectorAll('.fq-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      fScore += parseInt(opt.dataset.score, 10);
+      fIdx++;
+      if (fIdx < steps.length) showStep(fIdx); else buildReport();
+    });
+  });
+  function buildReport() {
+    steps.forEach(s => s.classList.remove('active'));
+    segs.forEach(s => s.classList.add('done'));
+    reportEl.classList.add('show');
+    const pct = Math.round((fScore / 30) * 100);
+    const arc = document.getElementById('gauge-arc'), circ = 402;
+    setTimeout(() => { arc.style.transition = 'stroke-dashoffset 1.3s cubic-bezier(.16,.7,.2,1)'; arc.style.strokeDashoffset = circ - (circ * pct / 100); }, 120);
+    const numEl = document.getElementById('score-num'), start = performance.now();
+    (function tick(now){ const p = Math.min((now-start)/1100,1); numEl.textContent = Math.round(pct*(1-Math.pow(1-p,3))); if(p<1) requestAnimationFrame(tick); else numEl.textContent = pct; })(performance.now());
+    let title, verdict, path, action, readiness, boundary;
+    if (pct >= 85) {
+      title = 'Fully Stoked — Green Light';
+      verdict = 'You\'re not just ready, you\'re aligned. This is the person who slows down and immediately speeds up. A perfect fit for deep work.';
+      path = '1-Yr Deep Coaching'; action = 'Auto-booked to Alex\'s calendar'; readiness = 'Very high'; boundary = 'Strong & forming';
+    } else if (pct >= 65) {
+      title = 'Aligned, With Edges to Soften';
+      verdict = 'The desire is real and the awareness is there — you just need structure and someone in your corner to make it stick.';
+      path = 'The Dojo / Connection Collective'; action = 'Invited to book a fit call'; readiness = 'Building'; boundary = 'Knows them, honouring next';
+    } else {
+      title = 'Curious, Not Yet Ready';
+      verdict = 'Something is calling, but the readiness to truly slow down isn\'t fully here yet. That\'s honest — and worth naming.';
+      path = 'Nurture + Stoke resources'; action = 'Sent the book waitlist, no call yet'; readiness = 'Early'; boundary = 'Aware, not protected';
+    }
+    document.getElementById('report-title').textContent = title;
+    document.getElementById('report-verdict').textContent = verdict;
+    document.getElementById('r-1').textContent = readiness;
+    document.getElementById('r-2').textContent = boundary;
+    document.getElementById('r-3').textContent = path;
+    document.getElementById('r-4').textContent = action;
+  }
+  document.getElementById('funnel-reset').addEventListener('click', () => {
+    fIdx = 0; fScore = 0;
+    reportEl.classList.remove('show');
+    document.getElementById('gauge-arc').style.strokeDashoffset = 402;
+    showStep(0);
+  });
+
+  // ---------- calculator ----------
+  let offer = { rev: 10000, hrs: 2.5, name: 'Deep Coaching' };
+  const hrsEl = document.getElementById('hrs');
+  const reinvestEl = document.getElementById('reinvest');
+  function fmt(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
+  function calc() {
+    const hrs = parseFloat(hrsEl.value);
+    const reinvest = parseInt(reinvestEl.value, 10) / 100;
+    document.getElementById('hrs-val').textContent = hrs;
+    document.getElementById('reinvest-val').textContent = Math.round(reinvest * 100);
+    const yearHours = Math.round(hrs * 52);
+    const weeksBack = Math.round(hrs * 52 / 40);
+    const reinvestedWeekly = hrs * reinvest;
+    const addedClients = reinvestedWeekly / offer.hrs;
+    const annual = addedClients * offer.rev;
+    document.getElementById('m-hours').textContent = yearHours;
+    document.getElementById('m-weeks').textContent = weeksBack;
+    document.getElementById('m-clients').textContent = addedClients.toFixed(1);
+    document.getElementById('m-month').textContent = fmt(annual / 12);
+    document.getElementById('calc-money').textContent = fmt(annual);
+    document.getElementById('calc-sub').innerHTML = 'from reinvested hours into <span>' + offer.name + '</span>';
+  }
+  hrsEl.addEventListener('input', calc);
+  reinvestEl.addEventListener('input', calc);
+  document.querySelectorAll('#offers button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#offers button').forEach(x => x.classList.toggle('on', x === b));
+      offer = { rev: parseFloat(b.dataset.rev), hrs: parseFloat(b.dataset.hrs), name: b.dataset.name };
+      calc();
+    });
+  });
+  calc();
+
+  // ---------- init ----------
+  revealIn(document.getElementById('view-overview'));
+  playSavings();
+</script>
+</body>
+</html>
